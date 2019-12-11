@@ -107,8 +107,8 @@ class MyWindow(QMainWindow):
         print("Image size %u x %u" % IMG_SIZE)
         if DISP_SCALE > 1:
             print("Display scale %u:1" % DISP_SCALE)
-        self.button = QPushButton('Open', self)
-        self.button.clicked.connect(self.on_click)
+        # self.button = QPushButton('Open', self)
+        # self.button.clicked.connect(self.on_click)
         self.button_trace_face = QPushButton('Track face', self)
         self.button_trace_face.clicked.connect(self.on_click_trace_face)
 
@@ -121,7 +121,7 @@ class MyWindow(QMainWindow):
         self.vlayout.addWidget(self.groupbox)
         self.vlayout.addWidget(self.label)
         self.vlayout.addWidget(self.textbox)
-        self.vlayout.addWidget(self.button)
+        # self.vlayout.addWidget(self.button)
         self.vlayout.addWidget(self.button_trace_face)
         self.central.setLayout(self.vlayout)
         self.setCentralWidget(self.central)
@@ -141,19 +141,17 @@ class MyWindow(QMainWindow):
     def on_click_turn(self):
         step = self.line_turn.text()
         if self.checkDirection.isChecked():
-            run_async_in_sync('enturn:-{}'.format(step).encode())
+            asyncio.run(nc.publish("Check", 'enturn:-{}'.format(step).encode()))
         else:
-            run_async_in_sync('enturn:{}'.format(step).encode())
+            asyncio.run(nc.publish("Check", 'enturn:{}'.format(step).encode()))
 
     @pyqtSlot()
     def on_click_led(self):
         led = self.combobox.currentIndex() + 1
         if self.led_checkbox.isChecked():
-            print(id(loop))
-            # loop.run_until_complete(publish_msg('led:on{}'.format(str(led)).encode()))
+            asyncio.run(nc.publish("Check", 'led:on{}'.format(str(led)).encode()))
         else:
-            print(id(loop))
-            # loop.run_until_complete(publish_msg('led:off{}'.format(str(led)).encode()))
+            asyncio.run(nc.publish("Check", 'led:off{}'.format(str(led)).encode()))
 
 
 
@@ -242,25 +240,15 @@ nc = NATS()
 async def run(loop):
     await nc.connect("10.10.10.10:4222", loop=loop)
 
-    # async def message_handler(msg):
-    #     # subject = msg.subject
-    #     # reply = msg.reply
-    #     data = msg.data
-    #     # print((data[0] * 256 + data[1]) * 0.3515625)
-    #     print(msg.data)
-    #
-    # # Simple publisher and async subscriber via coroutine.
-    # sid = await nc.subscribe("Encoder", cb=message_handler)
+    async def message_handler(msg):
+        # subject = msg.subject
+        # reply = msg.reply
+        data = msg.data
+        print((data[0] * 256 + data[1]) * 0.3515625)
+        # print(msg.data[1])
 
-
-async def publish_msg(msg):
-    # msg = await nc.request("Check", msg)
-    # data = msg.data.decode()
-    await asyncio.sleep(2)
-    print(msg)
-
-def run_async_in_sync(msg):
-    loop.run_until_complete(publish_msg(msg))
+    # Simple publisher and async subscriber via coroutine.
+    sid = await nc.subscribe("Encoder", cb=message_handler)
 
 
 if __name__ == '__main__':
@@ -273,10 +261,6 @@ if __name__ == '__main__':
     win.setWindowTitle('GUI')
     # loop = asyncio.get_event_loop()
     loop.run_until_complete(run(loop))
-    # loop.run_until_complete(publish_msg('enturn:-{}'.format(2).encode()))
-    run_async_in_sync('enturn:-{}'.format(2).encode())
-    print(id(loop))
-    loop.run_forever()
-    # with loop:
-        # print('fail')
-        # sys.exit(loop.run_forever())
+    # loop.run_forever()
+    with loop:
+        sys.exit(loop.run_forever())
