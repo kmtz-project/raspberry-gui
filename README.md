@@ -12,4 +12,5 @@
 ### Wi-Fi connection
 
 name: RPiHotspot
+
 pass: kmtzrobot
